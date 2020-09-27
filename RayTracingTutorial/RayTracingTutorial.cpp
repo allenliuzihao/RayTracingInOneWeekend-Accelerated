@@ -9,16 +9,15 @@
 
 double hit_sphere(const point3& center, double radius, const ray& r) {
     vec3 oc = r.origin() - center;
-    double a = dot(r.direction(), r.direction());
-    double b = 2 * dot(r.direction(), oc);
-    double c = dot(oc, oc) - radius * radius;
-
-    double discriminant = b * b - 4 * a * c;
+    double a = r.direction().length_squared();
+    double half_b = dot(r.direction(), oc);
+    double c = oc.length_squared() - radius * radius;
+    double discriminant = half_b * half_b - a * c;
 
     if (discriminant < 0) {
         return -1;
     }
-    return (-b - std::sqrt(discriminant)) / (2 * a);
+    return (-half_b - std::sqrt(discriminant)) / a;
 }
 
 color ray_color(const ray& r) {
