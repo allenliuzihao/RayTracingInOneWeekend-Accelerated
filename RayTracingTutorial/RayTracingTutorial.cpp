@@ -11,6 +11,8 @@ int main()
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
     for (int row = image_height - 1; row >= 0; --row) {
+
+        std::cerr << "\nScanlines remaining: " << row + 1 << ' ' << std::flush;
         for (int col = 0; col < image_width; ++col) {
             double r = double(col) / ((double)image_width - 1.0);
             double g = double(row) / ((double)image_height - 1.0);
@@ -23,6 +25,8 @@ int main()
             std::cout << ir << ' ' << ig << ' ' << ib << '\n';
         }
     }
+
+    std::cerr << "\nDone.\n";
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
