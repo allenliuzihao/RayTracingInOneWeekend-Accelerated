@@ -7,7 +7,33 @@
 #include "color.h"
 #include "ray.h"
 
+bool hit_sphere(const point3& center, double radius, const ray& r) {
+    vec3 oc = r.origin() - center;
+    double a = dot(r.direction(), r.direction());
+    double b = 2 * dot(r.direction(), oc);
+    double c = dot(oc, oc) - radius * radius;
+
+    double discriminant = b * b - 4 * a * c;
+
+    if (discriminant < 0) {
+        return false;
+    }
+
+    double ans1 = (-b + std::sqrt(discriminant)) / (2 * a);
+    double ans2 = (-b - std::sqrt(discriminant)) / (2 * a);
+
+    if (ans1 < 0 && ans2 < 0) {
+        return false;
+    }
+
+    return true;
+}
+
 color ray_color(const ray& r) {
+    if (hit_sphere(point3(0, 0, -1), 0.5, r)) {
+        return color(1.0, 0.0, 0.0);
+    }
+
     vec3 unit_dir = unit_vector(r.direction());
     double t = 0.5 * (unit_dir.y() + 1.0);
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
