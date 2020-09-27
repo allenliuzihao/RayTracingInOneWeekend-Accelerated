@@ -6,24 +6,55 @@
 
 class vec3 {
 public:
-	vec3();
-	vec3(double x, double y, double z);
+	vec3() : arr{ 0.0, 0.0, 0.0 } {}
 
-	double x() const;
-	double y() const;
-	double z() const;
+	vec3(double x, double y, double z) : arr{ x, y, z } {}
 
-	vec3 operator-() const;
-	double operator[](int i) const;
-	double& operator[](int i);
+	double x() const { return arr[0]; }
+	double y() const { return arr[1]; }
+	double z() const { return arr[2]; }
 
-	vec3& operator+= (const vec3& v);
-	vec3& operator*= (const double t);
-	vec3& operator/= (const double t);
+	vec3 operator-() const { return vec3(-arr[0], -arr[1], -arr[2]); }
+
+	double operator[](int i) const {
+		if (i < 0 || i > 2) {
+			throw std::runtime_error("index out of bound.");
+		}
+		return arr[i];
+	}
+
+	double& operator[](int i) {
+		if (i < 0 || i > 2) {
+			throw std::runtime_error("index out of bound.");
+		}
+		return arr[i];
+	}
+
+	vec3& operator+= (const vec3& v) {
+		arr[0] += v[0];
+		arr[1] += v[1];
+		arr[2] += v[2];
+
+		return *this;
+	}
+	vec3& operator*= (const double t) {
+		arr[0] *= t;
+		arr[1] *= t;
+		arr[2] *= t;
+
+		return *this;
+	}
+	vec3& operator/= (const double t) {
+		arr[0] /= t;
+		arr[1] /= t;
+		arr[2] /= t;
+
+		return *this;
+	}
 	
-	double length() const;
+	double length() const { return std::sqrt(length_squared()); }
 
-	double length_squared() const;
+	double length_squared() const { return arr[0] * arr[0] + arr[1] * arr[1] + arr[2] * arr[2]; }
 
 private:
 	double arr[3];
