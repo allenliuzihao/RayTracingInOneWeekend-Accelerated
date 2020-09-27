@@ -31,7 +31,8 @@ bool sphere::hit(const ray& r, double tmin, double tmax, hit_record& rec) const 
     if (root > tmin && root < tmax) {
         rec.t = root;
         rec.p = r.at(root);
-        rec.normal = (rec.p - center) / radius;
+        vec3 outward_normal = (rec.p - center) / radius;
+        rec.set_front_normal(r, outward_normal);
         return true;
     }
 
@@ -39,6 +40,8 @@ bool sphere::hit(const ray& r, double tmin, double tmax, hit_record& rec) const 
     if (root > tmin && root < tmax) {
         rec.t = root;
         rec.p = r.at(root);
+        vec3 outward_normal = (rec.p - center) / radius;
+        rec.set_front_normal(r, outward_normal);
         rec.normal = (rec.p - center) / radius;
         return true;
     }
