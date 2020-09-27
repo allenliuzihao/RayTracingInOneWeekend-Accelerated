@@ -37,6 +37,15 @@ public:
 
 		return *this;
 	}
+
+	vec3& operator+ (const double t) {
+		arr[0] += t;
+		arr[1] += t;
+		arr[2] += t;
+
+		return *this;
+	}
+
 	vec3& operator*= (const double t) {
 		arr[0] *= t;
 		arr[1] *= t;
