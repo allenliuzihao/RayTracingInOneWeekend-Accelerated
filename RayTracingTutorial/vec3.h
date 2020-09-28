@@ -133,3 +133,20 @@ inline vec3 random_in_unit_sphere() {
 		return rand;
 	}
 }
+
+// return a random point on a unit sphere centered at (0, 0, 0) with radius 1
+inline vec3 random_unit_vector() {
+	double a = random_double(0, 2*pi);
+	double z = random_double(-1, 1);
+	double r = std::sqrt(1 - z * z);
+
+	return vec3(r * cos(a), r * sin(a), z);
+}
+
+inline vec3 random_in_hemisphere(const vec3& normal) {
+	vec3 in_unit_sphere = random_in_unit_sphere();
+	if (dot(in_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
+		return in_unit_sphere;
+	else
+		return -in_unit_sphere;
+}
