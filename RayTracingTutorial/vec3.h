@@ -4,7 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
-class vec3 {
+class vec3 { 
 public:
 	vec3() : arr{ 0.0, 0.0, 0.0 } {}
 
@@ -65,6 +65,14 @@ public:
 
 	double length_squared() const { return arr[0] * arr[0] + arr[1] * arr[1] + arr[2] * arr[2]; }
 
+	inline static vec3 random() {
+		return vec3(random_double(), random_double(), random_double());
+	}
+
+	inline static vec3 random(double min, double max) {
+		return vec3(random_double(min, max), random_double(min, max), random_double(min, max));
+	}
+
 private:
 	double arr[3];
 };
@@ -112,4 +120,16 @@ inline vec3 cross(const vec3& u, const vec3& v) {
 
 inline vec3 unit_vector(vec3 v) {
 	return v / v.length();
+}
+
+
+inline vec3 random_in_unit_sphere() {
+	while (true) {
+		vec3 rand = vec3::random(-1, 1);
+		if (rand.length_squared() >= 1) {
+			continue;
+		}
+
+		return rand;
+	}
 }
