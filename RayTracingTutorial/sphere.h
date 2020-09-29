@@ -44,7 +44,6 @@ bool sphere::hit(const ray& r, double tmin, double tmax, hit_record& rec) const 
         rec.p = r.at(root);
         vec3 outward_normal = (rec.p - center) / radius;
         rec.set_front_normal(r, outward_normal);
-        rec.normal = (rec.p - center) / radius;
         rec.mat_ptr = mat_ptr;
         return true;
     }

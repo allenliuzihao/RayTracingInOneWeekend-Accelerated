@@ -10,6 +10,7 @@
 #include "material.h"
 #include "lambertian.h"
 #include "metal.h"
+#include "dialectric.h"
 
 color ray_color(const ray& r, hittable& world, int depth) {
     hit_record rec;
@@ -43,8 +44,8 @@ int main()
     hittables world;
     
     auto material_ground = std::make_shared<lambertian>(color(0.8, 0.8, 0.0));
-    auto material_center = std::make_shared<lambertian>(color(0.7, 0.3, 0.3));
-    auto material_left = std::make_shared<metal>(color(0.8, 0.8, 0.8), 0.3);
+    auto material_center = std::make_shared<dielectric>(1.5);
+    auto material_left = std::make_shared<dielectric>(1.5);
     auto material_right = std::make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
 
 

@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClInclude Include="camera.h" />
     <ClInclude Include="color.h" />
+    <ClInclude Include="dialectric.h" />
     <ClInclude Include="hittable.h" />
     <ClInclude Include="hittables.h" />
     <ClInclude Include="lambertian.h" />
