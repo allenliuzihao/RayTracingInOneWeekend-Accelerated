@@ -71,8 +71,8 @@ int main()
         for (int col = 0; col < image_width; ++col) {
             color pixel_color(0, 0, 0);
             for (int sample = 0; sample < samples_per_pixel; ++sample) {
-                double u = (col * 1.0 + random_double()) / (image_width - 1.0);
-                double v = (row * 1.0 + random_double()) / (image_height - 1.0);
+                double u = (col * 1.0 + random_double()) / image_width;
+                double v = (row * 1.0 + random_double()) / image_height;
                 ray r = cam.get_ray(u, v);
                 pixel_color += ray_color(r, world, max_depth);
             }
