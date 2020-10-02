@@ -163,3 +163,12 @@ inline vec3 random_in_hemisphere(const vec3& normal) {
 	else
 		return -in_unit_sphere;
 }
+
+inline vec3 random_in_unit_disk() {
+	while (true) {
+		auto p = vec3(random_double(-1, 1), random_double(-1, 1), 0);
+		if (p.length() < 1.0) {
+			return p;
+		}
+	}
+}
