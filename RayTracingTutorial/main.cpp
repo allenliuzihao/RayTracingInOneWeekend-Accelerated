@@ -117,19 +117,7 @@ int main() {
     auto samples_per_pixel = 10;   // 500
     auto max_depth = 50;
 
-    // cpu configurations
-    unsigned num_cpus_context = std::thread::hardware_concurrency();
-    std::vector<int> factors = find_closest_factors(num_cpus_context);
-    int num_tiles_horizontal = factors[0], num_tiles_vertical = factors[1];
-
-    if (image_width < image_height) {
-        num_tiles_horizontal = factors[1];
-        num_tiles_vertical = factors[0];
-    }
-
-    int tile_width = (int) ceil(image_width / num_tiles_horizontal);
-    int tile_height = (int) ceil(image_height / num_tiles_vertical);
-
+    // Scene and materials
     auto world = random_scene();
     
     auto material_ground = std::make_shared<lambertian>(color(0.8, 0.8, 0.0));
@@ -152,17 +140,29 @@ int main() {
 
     camera cam(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
 
+    // prepare image grid
     vec3** image_grid = new vec3 * [image_height];
     for (int row = 0; row < image_height; ++row) {
         image_grid[row] = new vec3[image_width];
         for (int col = 0; col < image_width; ++col) {
             image_grid[row][col] = color(0, 0, 0);
         }
-            
     }
 
+    // tile width and height
+    unsigned num_cpus_context = std::thread::hardware_concurrency();
+    std::vector<int> factors = find_closest_factors(num_cpus_context);
+    int num_tiles_horizontal = factors[0], num_tiles_vertical = factors[1];
+
+    if (image_width < image_height) {
+        num_tiles_horizontal = factors[1];
+        num_tiles_vertical = factors[0];
+    }
+
+    int tile_width = (int)ceil(image_width / num_tiles_horizontal);
+    int tile_height = (int)ceil(image_height / num_tiles_vertical);
+
     // TODO: parallelize this on cpu cores, with one thread per core.
-    
     std::cerr << "start to render the image in tiles of dim height: " << tile_height << " width: " << tile_width << "\n";
     for (int row = 0; row < image_height; row += tile_height) {
         for (int col = 0; col < image_width; col += tile_width) {
