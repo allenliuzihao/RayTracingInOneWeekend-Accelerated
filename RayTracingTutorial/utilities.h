@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
 #include <memory>
+#include <vector>
+#include <stdexcept>
 
 // constants
 
@@ -30,4 +33,19 @@ inline double clamp(double x, double min, double max) {
 		return max;
 	}
 	return x;
+}
+
+inline std::vector<int> find_closest_factors(int num) {
+	if (num <= 0) {
+		throw std::runtime_error("num should be positve.");
+	}
+
+	for (int i = (int) std::sqrt(num); i >= 1; --i) {
+		if (num % i == 0) {
+			return { num / i, i };
+		}
+	}
+
+	assert(false && "two positive factors should exists for postive integer num.");
+	return {};
 }

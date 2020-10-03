@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 
 #include "utilities.h"
 
@@ -81,13 +82,25 @@ hittables random_scene() {
     return world;
 }
 
-int main()
-{
+int main() {
+    // renderer configuration
     auto aspect_ratio = 3.0 / 2.0;
     auto image_width = 600;
     auto image_height = static_cast<int>(image_width / aspect_ratio);
     auto samples_per_pixel = 100;
     auto max_depth = 50;
+
+    // cpu configurations
+    unsigned num_cpus_context = std::thread::hardware_concurrency();
+    std::vector<int> factors = find_closest_factors(num_cpus_context);
+    int num_tiles_horizontal = factors[0], num_tiles_vertical = factors[1];
+
+    if (image_width < image_height) {
+        num_tiles_horizontal = factors[1];
+        num_tiles_vertical = factors[0];
+    }
+
+    std::cerr << "num_tiles_horizontal: " << num_tiles_horizontal << " num_tiles_vertical: " << num_tiles_vertical << std::endl;
 
     auto world = random_scene();
     
@@ -112,7 +125,8 @@ int main()
     camera cam(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
 
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
-
+    
+    /*
     for (int row = image_height - 1; row >= 0; --row) {
 
         std::cerr << "\nScanlines remaining: " << row + 1 << ' ' << std::flush;
@@ -127,6 +141,7 @@ int main()
             write_color(std::cout, pixel_color, samples_per_pixel);
         }
     }
+    */
 
     std::cerr << "\nDone.\n";
 }
