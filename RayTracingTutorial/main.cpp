@@ -13,7 +13,7 @@
 #include "metal.h"
 #include "dialectric.h"
 
-color ray_color(const ray& r, hittable& world, int depth) {
+color ray_color(const ray& r, const hittable& world, int depth) {
     hit_record rec;
 
     if (depth <= 0) {
@@ -82,6 +82,29 @@ hittables random_scene() {
     return world;
 }
 
+void render(std::vector<std::vector<vec3>>& image_grid,
+            int samples_per_pixel,
+            int max_depth,
+            const hittables& world,
+            const camera& cam,
+            const std::pair<int, int> tile_origin, 
+            const std::pair<int, int> tile_dim, 
+            const std::pair<int, int> image_dim) {
+    int row_bound = std::min(image_dim.first , tile_origin.first + tile_dim.first);
+    int col_bound = std::min(image_dim.second, tile_origin.second + tile_dim.second);
+
+    for (int row = tile_origin.first; row < row_bound; ++row) {
+        for (int col = tile_origin.second; col < col_bound; ++col) {            
+            for (int sample = 0; sample < samples_per_pixel; ++sample) {
+                double u = (col * 1.0 + random_double()) / image_dim.second;
+                double v = (row * 1.0 + random_double()) / image_dim.first;
+                ray r = cam.get_ray(u, v);
+                image_grid[row][col] += ray_color(r, world, max_depth);
+            }
+        }
+    }
+}
+
 int main() {
     // renderer configuration
     auto aspect_ratio = 3.0 / 2.0;
@@ -99,6 +122,9 @@ int main() {
         num_tiles_horizontal = factors[1];
         num_tiles_vertical = factors[0];
     }
+
+    int tile_width = (int) ceil(image_width / num_tiles_horizontal);
+    int tile_height = (int) ceil(image_height / num_tiles_vertical);
 
     auto world = random_scene();
     
@@ -122,24 +148,30 @@ int main() {
 
     camera cam(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
 
-    std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
-    
-    /*
-    for (int row = image_height - 1; row >= 0; --row) {
+    std::vector<std::vector<vec3>> image_grid(image_height);
+    for (int row = 0; row < image_height; ++row) {
+        image_grid[row].resize(image_width, vec3(0, 0, 0));
+    }
 
-        std::cerr << "\nScanlines remaining: " << row + 1 << ' ' << std::flush;
-        for (int col = 0; col < image_width; ++col) {
-            color pixel_color(0, 0, 0);
-            for (int sample = 0; sample < samples_per_pixel; ++sample) {
-                double u = (col * 1.0 + random_double()) / image_width;
-                double v = (row * 1.0 + random_double()) / image_height;
-                ray r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, world, max_depth);
-            }
-            write_color(std::cout, pixel_color, samples_per_pixel);
+    // TODO: parallelize this on cpu cores, with one thread per core.
+    for (int row = 0; row < image_height; row += tile_height) {
+        for (int col = 0; col < image_width; col += tile_width) {
+            render(image_grid,
+                   samples_per_pixel, max_depth, 
+                   world, cam, 
+                   std::make_pair(row, col), 
+                   std::make_pair(tile_height, tile_width), 
+                   std::make_pair(image_height, image_width));
         }
     }
-    */
+
+    std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+
+    for (int row = image_height - 1; row >= 0; --row) {
+        for (int col = 0; col < image_width; ++col) {
+            write_color(std::cout, image_grid[row][col], samples_per_pixel);
+        }
+    }
 
     std::cerr << "\nDone.\n";
 }
