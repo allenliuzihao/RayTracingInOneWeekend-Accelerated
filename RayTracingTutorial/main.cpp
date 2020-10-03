@@ -82,7 +82,7 @@ hittables random_scene() {
     return world;
 }
 
-void render(std::vector<std::vector<vec3>>& image_grid,
+void render(vec3** image_grid,
             int samples_per_pixel,
             int max_depth,
             const hittables& world,
@@ -92,6 +92,8 @@ void render(std::vector<std::vector<vec3>>& image_grid,
             const std::pair<int, int> image_dim) {
     int row_bound = std::min(image_dim.first , tile_origin.first + tile_dim.first);
     int col_bound = std::min(image_dim.second, tile_origin.second + tile_dim.second);
+
+    std::cerr << "Work on tile with origin row " << tile_origin.first << " col " << tile_origin.second << std::flush;
 
     for (int row = tile_origin.first; row < row_bound; ++row) {
         for (int col = tile_origin.second; col < col_bound; ++col) {            
@@ -103,14 +105,16 @@ void render(std::vector<std::vector<vec3>>& image_grid,
             }
         }
     }
+
+    std::cerr << "\ntile finished\n";
 }
 
 int main() {
     // renderer configuration
     auto aspect_ratio = 3.0 / 2.0;
-    auto image_width = 1200;
+    auto image_width = 200; //1200
     auto image_height = static_cast<int>(image_width / aspect_ratio);
-    auto samples_per_pixel = 500;
+    auto samples_per_pixel = 10;   // 500
     auto max_depth = 50;
 
     // cpu configurations
@@ -148,12 +152,18 @@ int main() {
 
     camera cam(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
 
-    std::vector<std::vector<vec3>> image_grid(image_height);
+    vec3** image_grid = new vec3 * [image_height];
     for (int row = 0; row < image_height; ++row) {
-        image_grid[row].resize(image_width, vec3(0, 0, 0));
+        image_grid[row] = new vec3[image_width];
+        for (int col = 0; col < image_width; ++col) {
+            image_grid[row][col] = color(0, 0, 0);
+        }
+            
     }
 
     // TODO: parallelize this on cpu cores, with one thread per core.
+    
+    std::cerr << "start to render the image in tiles of dim height: " << tile_height << " width: " << tile_width << "\n";
     for (int row = 0; row < image_height; row += tile_height) {
         for (int col = 0; col < image_width; col += tile_width) {
             render(image_grid,
@@ -164,14 +174,19 @@ int main() {
                    std::make_pair(image_height, image_width));
         }
     }
+    std::cerr << "\nrendering complete.\n";
 
+    std::cerr << "\nsaving ppm images\n";
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
-
     for (int row = image_height - 1; row >= 0; --row) {
         for (int col = 0; col < image_width; ++col) {
             write_color(std::cout, image_grid[row][col], samples_per_pixel);
         }
     }
-
     std::cerr << "\nDone.\n";
+
+    for (int row = 0; row < image_height; ++row) {
+        delete[] image_grid[row];
+    }
+    delete[] image_grid;
 }
