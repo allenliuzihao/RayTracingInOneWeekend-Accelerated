@@ -1,5 +1,10 @@
+#include <windows.h>
+
+#include <chrono>
 #include <iostream>
+#include <sstream>
 #include <thread>
+#include <mutex>
 
 #include "utilities.h"
 
@@ -82,18 +87,38 @@ hittables random_scene() {
     return world;
 }
 
-void render(vec3** image_grid,
-            int samples_per_pixel,
-            int max_depth,
+void render(std::mutex& m,
+            int core,
+            int samples_per_pixel, int max_depth,
+            vec3** image_grid,
             const hittables& world,
             const camera& cam,
             const std::pair<int, int> tile_origin, 
             const std::pair<int, int> tile_dim, 
             const std::pair<int, int> image_dim) {
-    int row_bound = std::min(image_dim.first , tile_origin.first + tile_dim.first);
-    int col_bound = std::min(image_dim.second, tile_origin.second + tile_dim.second);
+    auto thread_id = std::this_thread::get_id();
+    auto mask = (static_cast<DWORD_PTR>(1) << core);            
+    if (SetThreadAffinityMask(GetCurrentThread(), mask) == 0) {
+#ifdef PRINT_LOG
+        {
+            std::lock_guard<std::mutex> lock(m);
+            std::cerr << "Thread #" << thread_id << ": error setting affinity mask for thread and core: " << core << "\n";
+        }
+#endif
+        return;
+    }
 
-    std::cerr << "Work on tile with origin row " << tile_origin.first << " col " << tile_origin.second << std::flush;
+    int row_bound = min(image_dim.first, tile_origin.first + tile_dim.first);
+    int col_bound = min(image_dim.second, tile_origin.second + tile_dim.second);
+
+#ifdef PRINT_LOG
+    {
+        std::lock_guard<std::mutex> lock(m);
+        std::cerr << "Thread #" << thread_id
+                  << ": work on tile " << core
+                  << " with origin row " << tile_origin.first << " col " << tile_origin.second << "\n";
+    }
+#endif
 
     for (int row = tile_origin.first; row < row_bound; ++row) {
         for (int col = tile_origin.second; col < col_bound; ++col) {            
@@ -106,7 +131,13 @@ void render(vec3** image_grid,
         }
     }
 
-    std::cerr << "\ntile finished\n";
+#ifdef PRINT_LOG
+    {
+        std::lock_guard<std::mutex> lock(m);
+        std::cerr << "\nThread #" << thread_id 
+                  << " tile " << core << " finished\n";
+    }
+#endif
 }
 
 int main() {
@@ -151,6 +182,10 @@ int main() {
 
     // tile width and height
     unsigned num_cpus_context = std::thread::hardware_concurrency();
+    if (num_cpus_context == 0) {
+        throw std::runtime_error("unable to determine the number of cores on the CPU.");
+    }
+
     std::vector<int> factors = find_closest_factors(num_cpus_context);
     int num_tiles_horizontal = factors[0], num_tiles_vertical = factors[1];
 
@@ -159,22 +194,49 @@ int main() {
         num_tiles_vertical = factors[0];
     }
 
-    int tile_width = (int)ceil(image_width / num_tiles_horizontal);
-    int tile_height = (int)ceil(image_height / num_tiles_vertical);
+    int tile_width = (int)ceil(image_width / (double) num_tiles_horizontal);
+    int tile_height = (int)ceil(image_height / (double) num_tiles_vertical);
+    
+    int t_index = 0;
+    std::mutex m;
+    std::vector<std::thread> threads(num_cpus_context);
 
     // TODO: parallelize this on cpu cores, with one thread per core.
-    std::cerr << "start to render the image in tiles of dim height: " << tile_height << " width: " << tile_width << "\n";
+    std::cerr << "start to render the image in tiles of dim height: " << tile_height << " width: " << tile_width << " image height: " << image_height << " image width: " << image_width << "\n";
+    std::cerr << "Launching " << num_cpus_context << " render threads.\n";
+    
+    std::clock_t c_start = std::clock();
+    auto t_start = std::chrono::high_resolution_clock::now();
+
     for (int row = 0; row < image_height; row += tile_height) {
         for (int col = 0; col < image_width; col += tile_width) {
-            render(image_grid,
-                   samples_per_pixel, max_depth, 
-                   world, cam, 
-                   std::make_pair(row, col), 
-                   std::make_pair(tile_height, tile_width), 
-                   std::make_pair(image_height, image_width));
+            threads[t_index] = std::thread(render,
+                                           std::ref(m),
+                                           t_index,                                           
+                                           samples_per_pixel, max_depth, 
+                                           image_grid,
+                                           world, cam, 
+                                           std::make_pair(row, col), 
+                                           std::make_pair(tile_height, tile_width), 
+                                           std::make_pair(image_height, image_width));            
+            t_index++;
         }
     }
-    std::cerr << "\nrendering complete.\n";
+
+    for (auto& t : threads) {
+        t.join();
+    }
+    
+    std::clock_t c_end = std::clock();
+    auto t_end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> diff = t_end - t_start;
+
+    std::cerr << "\nrendering complete.\n CPU time used: "
+              << 1000.0 * ((double) c_end - (double) c_start) / CLOCKS_PER_SEC << " ms\n"
+              << "Wall clock time passed: "
+              << std::chrono::duration<double, std::milli>(t_end - t_start).count()
+              << " ms\n";
 
     std::cerr << "\nsaving ppm images\n";
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";

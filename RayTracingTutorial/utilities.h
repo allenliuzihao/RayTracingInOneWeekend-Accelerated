@@ -1,14 +1,17 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
+#include <ctime>
 #include <limits>
 #include <memory>
 #include <vector>
 #include <stdexcept>
 
 // constants
+//#define PRINT_LOG
 
 const double infinity = std::numeric_limits<double>::infinity();
 const double pi = 3.1415926535897932385;
