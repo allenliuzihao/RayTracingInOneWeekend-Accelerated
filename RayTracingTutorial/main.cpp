@@ -97,7 +97,30 @@ void render(std::mutex& m,
             const std::pair<int, int> tile_dim, 
             const std::pair<int, int> image_dim) {
     auto thread_id = std::this_thread::get_id();
-    auto mask = (static_cast<DWORD_PTR>(1) << core);            
+    auto mask = (static_cast<DWORD_PTR>(1) << core);
+
+    ULONG_PTR appAff;
+    ULONG_PTR sysAff;
+    if (GetProcessAffinityMask(GetCurrentProcess(), &appAff, &sysAff) == 0) {
+#ifdef PRINT_LOG
+        {
+            std::lock_guard<std::mutex> lock(m);
+            std::cerr << "Thread #" << thread_id << ": error getting affinity mask for the current process\n";
+        }
+#endif
+        return;
+    }
+
+    if ((mask & appAff) == 0) {
+#ifdef PRINT_LOG
+        {
+            std::lock_guard<std::mutex> lock(m);
+            std::cerr << "Thread #" << thread_id << ": error requesting CPU affinity that processor does not have. \n";
+        }
+#endif
+        return;
+    }
+
     if (SetThreadAffinityMask(GetCurrentThread(), mask) == 0) {
 #ifdef PRINT_LOG
         {
