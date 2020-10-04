@@ -201,7 +201,6 @@ int main() {
     std::mutex m;
     std::vector<std::thread> threads(num_cpus_context);
 
-    // TODO: parallelize this on cpu cores, with one thread per core.
     std::cerr << "start to render the image in tiles of dim height: " << tile_height << " width: " << tile_width << " image height: " << image_height << " image width: " << image_width << "\n";
     std::cerr << "Launching " << num_cpus_context << " render threads.\n";
     
