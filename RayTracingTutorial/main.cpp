@@ -115,20 +115,19 @@ void render(std::mutex& m,
 #ifdef PRINT_LOG
         {
             std::lock_guard<std::mutex> lock(m);
-            std::cerr << "Thread #" << thread_id << ": error requesting CPU affinity that processor does not have. \n";
+            std::cerr << "Thread #" << thread_id << ": error requesting CPU affinity that current process does not have. \n";
         }
 #endif
-        return;
-    }
-
-    if (SetThreadAffinityMask(GetCurrentThread(), mask) == 0) {
+    } else {
+        if (SetThreadAffinityMask(GetCurrentThread(), mask) == 0) {
 #ifdef PRINT_LOG
-        {
-            std::lock_guard<std::mutex> lock(m);
-            std::cerr << "Thread #" << thread_id << ": error setting affinity mask for thread and core: " << core << "\n";
-        }
+            {
+                std::lock_guard<std::mutex> lock(m);
+                std::cerr << "Thread #" << thread_id << ": error setting affinity mask for thread and core: " << core << "\n";
+            }
 #endif
-        return;
+            return;
+        }
     }
 
     int row_bound = min(image_dim.first, tile_origin.first + tile_dim.first);
@@ -166,9 +165,9 @@ void render(std::mutex& m,
 int main() {
     // renderer configuration
     auto aspect_ratio = 3.0 / 2.0;
-    auto image_width = 200; //1200
+    auto image_width = 1200;
     auto image_height = static_cast<int>(image_width / aspect_ratio);
-    auto samples_per_pixel = 10;   // 500
+    auto samples_per_pixel = 500;
     auto max_depth = 50;
 
     // Scene and materials
