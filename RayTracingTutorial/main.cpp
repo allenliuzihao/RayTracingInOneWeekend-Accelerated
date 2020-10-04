@@ -84,9 +84,9 @@ hittables random_scene() {
 int main()
 {
     auto aspect_ratio = 3.0 / 2.0;
-    auto image_width = 600;
+    auto image_width = 1200;
     auto image_height = static_cast<int>(image_width / aspect_ratio);
-    auto samples_per_pixel = 100;
+    auto samples_per_pixel = 500;
     auto max_depth = 50;
 
     auto world = random_scene();
