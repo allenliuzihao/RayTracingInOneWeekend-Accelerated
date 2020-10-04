@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <ctime>
 #include <cstdlib>
 #include <limits>
 #include <memory>

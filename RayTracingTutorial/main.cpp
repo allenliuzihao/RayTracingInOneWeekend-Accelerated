@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 
 #include "utilities.h"
@@ -84,9 +85,9 @@ hittables random_scene() {
 int main()
 {
     auto aspect_ratio = 3.0 / 2.0;
-    auto image_width = 1200;
+    auto image_width = 200;
     auto image_height = static_cast<int>(image_width / aspect_ratio);
-    auto samples_per_pixel = 500;
+    auto samples_per_pixel = 10;
     auto max_depth = 50;
 
     auto world = random_scene();
@@ -113,6 +114,9 @@ int main()
 
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
+    std::clock_t c_start = std::clock();
+    auto t_start = std::chrono::high_resolution_clock::now();
+
     for (int row = image_height - 1; row >= 0; --row) {
 
         std::cerr << "\nScanlines remaining: " << row + 1 << ' ' << std::flush;
@@ -127,6 +131,17 @@ int main()
             write_color(std::cout, pixel_color, samples_per_pixel);
         }
     }
+
+    std::clock_t c_end = std::clock();
+    auto t_end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> diff = t_end - t_start;
+
+    std::cerr << "\nrendering complete.\n CPU time used: "
+              << 1000.0 * ((double)c_end - (double)c_start) / CLOCKS_PER_SEC << " ms\n"
+              << "Wall clock time passed: "
+              << std::chrono::duration<double, std::milli>(t_end - t_start).count()
+              << " ms\n";
 
     std::cerr << "\nDone.\n";
 }
