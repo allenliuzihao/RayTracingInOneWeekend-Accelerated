@@ -1,5 +1,9 @@
 #include <iostream>
 
+#include <cuda_runtime.h>
+#include <helper_cuda.h>
+#include <helper_functions.h>
+
 #include "utilities.h"
 
 #include "color.h"
@@ -11,6 +15,7 @@
 #include "lambertian.h"
 #include "metal.h"
 #include "dialectric.h"
+
 
 color ray_color(const ray& r, hittable& world, int depth) {
     hit_record rec;
