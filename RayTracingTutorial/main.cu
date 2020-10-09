@@ -86,8 +86,15 @@ hittables random_scene() {
     return world;
 }
 
-int main()
-{
+void init_host_image_buffer(color* image_buffer, int image_width, int image_height) {
+    for (int row = 0; row < image_height; ++row) {
+        for (int col = 0; col < image_width; ++col) {
+            image_buffer[row * image_width + col] = color(0, 0, 0);
+        }
+    }
+}
+
+int main() {
     auto aspect_ratio = 3.0 / 2.0;
     auto image_width = 1200;
     auto image_height = static_cast<int>(image_width / aspect_ratio);
@@ -118,6 +125,23 @@ int main()
 
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
+    unsigned int size_image_buffer = image_width * image_height;
+    unsigned int mem_size_image_buffer = size_image_buffer * sizeof(color);
+    color* image_buffer, *d_image_buffer; 
+
+    std::cerr << "Image width: " << image_width << " image height: " << image_height << "\n";
+    std::cerr << "Allocating " << size_image_buffer << " number of pixels with " << mem_size_image_buffer << " bytes on host and device.\n";
+    
+    checkCudaErrors(cudaMallocHost(&image_buffer, mem_size_image_buffer));
+    init_host_image_buffer(image_buffer, image_width, image_height);
+
+    checkCudaErrors(cudaMalloc(&d_image_buffer, mem_size_image_buffer));
+    
+    checkCudaErrors(cudaMemcpyAsync(d_image_buffer, image_buffer, mem_size_image_buffer, cudaMemcpyHostToDevice));
+
+
+
+    /*
     for (int row = image_height - 1; row >= 0; --row) {
 
         std::cerr << "\nScanlines remaining: " << row + 1 << ' ' << std::flush;
@@ -132,6 +156,11 @@ int main()
             write_color(std::cout, pixel_color, samples_per_pixel);
         }
     }
+    */
+
 
     std::cerr << "\nDone.\n";
+
+    checkCudaErrors(cudaFreeHost(image_buffer));
+    checkCudaErrors(cudaFree(d_image_buffer));
 }
