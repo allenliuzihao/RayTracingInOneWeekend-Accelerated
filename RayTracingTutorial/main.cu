@@ -128,6 +128,9 @@ int main() {
     unsigned int size_image_buffer = image_width * image_height;
     unsigned int mem_size_image_buffer = size_image_buffer * sizeof(color);
     color* image_buffer, *d_image_buffer; 
+    cudaStream_t stream;
+
+    checkCudaErrors(cudaStreamCreate(&stream));
 
     std::cerr << "Image width: " << image_width << " image height: " << image_height << "\n";
     std::cerr << "Allocating " << size_image_buffer << " number of pixels with " << mem_size_image_buffer << " bytes on host and device.\n";
@@ -136,10 +139,14 @@ int main() {
     init_host_image_buffer(image_buffer, image_width, image_height);
 
     checkCudaErrors(cudaMalloc(&d_image_buffer, mem_size_image_buffer));
-    
-    checkCudaErrors(cudaMemcpyAsync(d_image_buffer, image_buffer, mem_size_image_buffer, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpyAsync(d_image_buffer, image_buffer, mem_size_image_buffer, cudaMemcpyHostToDevice, stream));
+
+    // TODO: cam, object materials and geometries, and world should also be transferred to the GPU.
+    std::cerr << "camera: " << sizeof(cam) << "\n";
 
 
+
+    checkCudaErrors(cudaStreamSynchronize(stream));
 
     /*
     for (int row = image_height - 1; row >= 0; --row) {
@@ -158,6 +165,16 @@ int main() {
     }
     */
 
+    checkCudaErrors(cudaMemcpyAsync(image_buffer, d_image_buffer, mem_size_image_buffer, cudaMemcpyDeviceToHost, stream));
+    checkCudaErrors(cudaStreamSynchronize(stream));
+
+    std::cerr << "Writing result from device to host\n";
+
+    for (int row = image_height - 1; row >= 0; --row) {
+        for (int col = 0; col < image_width; ++col) {
+            write_color(std::cout, image_buffer[row * image_width + col], samples_per_pixel);
+        }
+    }
 
     std::cerr << "\nDone.\n";
 
