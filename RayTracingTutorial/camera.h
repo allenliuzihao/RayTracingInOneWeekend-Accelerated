@@ -4,13 +4,15 @@
 
 class camera {
 public:
-	camera(point3 lookfrom,
-		   point3 lookat,
-		   vec3   vup,
-		   double fov, 
-		   double aspect_ratio,
-		   double aperture,
-	       double focal_dist) {
+	__device__ camera() {}
+
+	__device__ camera(point3 lookfrom,
+							   point3 lookat,
+							   vec3   vup,
+							   double fov, 
+							   double aspect_ratio,
+							   double aperture,
+							   double focal_dist) {
 		
 		double theta = degrees_to_radians(fov);
 		double h = focal_dist * tan(theta / 2.0);
@@ -30,7 +32,7 @@ public:
 		lens_radius = aperture / 2.0f;
 	}
 
-	ray get_ray(double s, double t) const {
+	__device__ ray get_ray(double s, double t) const {
 		vec3 sampled_and_scaled_point = lens_radius * random_in_unit_disk();
 		vec3 offset = sampled_and_scaled_point.x() * u + sampled_and_scaled_point.y() * v;
 

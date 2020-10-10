@@ -5,18 +5,17 @@
 
 class sphere : public hittable {
 public:
-	sphere() : center({0.0, 0.0, 0.0}), radius(0.0) {}
-	sphere(point3 cen, double r, std::shared_ptr<material> m) : center(cen), radius(r), mat_ptr(m) {}
+    __device__ sphere(point3 cen, double r, material* m_ptr) : center(cen), radius(r), mat_ptr(m_ptr) {}
 	
-	virtual bool hit(const ray& r, double tmin, double tmax, hit_record& rec) const override;
+    __device__ virtual bool hit(const ray& r, double tmin, double tmax, hit_record& rec) const override;
 
 private:
 	point3 center;
 	double radius;
-    std::shared_ptr<material> mat_ptr;
+    material* mat_ptr;
 };
 
-bool sphere::hit(const ray& r, double tmin, double tmax, hit_record& rec) const {
+__device__ bool sphere::hit(const ray& r, double tmin, double tmax, hit_record& rec) const {
     vec3 oc = r.origin() - center;
     double a = r.direction().length_squared();
     double half_b = dot(r.direction(), oc);

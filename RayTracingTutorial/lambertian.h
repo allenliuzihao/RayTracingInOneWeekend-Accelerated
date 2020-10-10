@@ -6,9 +6,9 @@
 
 class lambertian : public material {
 public:
-	lambertian(const color& a): albedo(a) {}
+	__device__ lambertian(const color& a) : albedo(a) {}
 
-	virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override {
+	__device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override {
 		vec3 scattered_direction = rec.normal + random_unit_vector();
 		scattered = ray(rec.p, scattered_direction);
 		attenuation = albedo;

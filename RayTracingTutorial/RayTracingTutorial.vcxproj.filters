@@ -56,8 +56,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cu">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <CudaCompile Include="main.cu" />
   </ItemGroup>
 </Project>

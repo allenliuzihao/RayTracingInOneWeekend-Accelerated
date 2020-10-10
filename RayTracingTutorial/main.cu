@@ -14,8 +14,9 @@
 #include "material.h"
 #include "lambertian.h"
 #include "metal.h"
-#include "dialectric.h"
+#include "dialectric.h" 
 
+__constant__ camera cam;
 
 color ray_color(const ray& r, hittable& world, int depth) {
     hit_record rec;
@@ -38,7 +39,7 @@ color ray_color(const ray& r, hittable& world, int depth) {
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
 }
 
-hittables random_scene() {
+hittables random_scene(hittables* d_world, cudaStream_t stream) {
     hittables world;
 
     auto ground_material = std::make_shared<lambertian>(color(0.5, 0.5, 0.5));
@@ -95,58 +96,55 @@ void init_host_image_buffer(color* image_buffer, int image_width, int image_heig
 }
 
 int main() {
+    // initialize render config
     auto aspect_ratio = 3.0 / 2.0;
     auto image_width = 1200;
     auto image_height = static_cast<int>(image_width / aspect_ratio);
     auto samples_per_pixel = 500;
     auto max_depth = 50;
 
-    auto world = random_scene();
-    
-    auto material_ground = std::make_shared<lambertian>(color(0.8, 0.8, 0.0));
-    auto material_center = std::make_shared<lambertian>(color(0.1, 0.2, 0.5));
-    auto material_left = std::make_shared<dielectric>(1.5);
-    auto material_right = std::make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
-
-    world.add(std::make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
-    world.add(std::make_shared<sphere>(point3(0.0, 0.0, -1.0), 0.5, material_center));
-    world.add(std::make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
-    world.add(std::make_shared<sphere>(point3(-1.0, 0.0, -1.0), -0.45, material_left));
-    world.add(std::make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
-
-    // Camera
+    // initialize camera
     point3 lookfrom(13, 2, 3);
     point3 lookat(0, 0, 0);
     vec3 vup(0, 1, 0);
     auto dist_to_focus = 10.0;
     double aperture = 0.1;
+    camera host_cam(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
 
-    camera cam(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
 
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
     unsigned int size_image_buffer = image_width * image_height;
     unsigned int mem_size_image_buffer = size_image_buffer * sizeof(color);
-    color* image_buffer, *d_image_buffer; 
-    cudaStream_t stream;
+    color* image_buffer, * d_image_buffer;
+    hittables* d_world;
+    cudaStream_t stream_image_buffer, stream_camera, stream_world;
 
-    checkCudaErrors(cudaStreamCreate(&stream));
+    checkCudaErrors(cudaStreamCreate(&stream_image_buffer));
+    checkCudaErrors(cudaStreamCreate(&stream_camera));
+    checkCudaErrors(cudaStreamCreate(&stream_world));
 
+    // copy camera data over to device memory
+    checkCudaErrors(cudaMemcpyToSymbolAsync(cam, &host_cam, sizeof(camera), 0, cudaMemcpyDefault, stream_camera));
+
+    // TODO: initialize world
+
+
+    // copy image data buffer to device memory
     std::cerr << "Image width: " << image_width << " image height: " << image_height << "\n";
     std::cerr << "Allocating " << size_image_buffer << " number of pixels with " << mem_size_image_buffer << " bytes on host and device.\n";
-    
+
     checkCudaErrors(cudaMallocHost(&image_buffer, mem_size_image_buffer));
     init_host_image_buffer(image_buffer, image_width, image_height);
 
     checkCudaErrors(cudaMalloc(&d_image_buffer, mem_size_image_buffer));
-    checkCudaErrors(cudaMemcpyAsync(d_image_buffer, image_buffer, mem_size_image_buffer, cudaMemcpyHostToDevice, stream));
-
-    // TODO: cam, object materials and geometries, and world should also be transferred to the GPU.
-    std::cerr << "camera: " << sizeof(cam) << "\n";
+    checkCudaErrors(cudaMemcpyAsync(d_image_buffer, image_buffer, mem_size_image_buffer, cudaMemcpyHostToDevice, stream_image_buffer));
 
 
-
-    checkCudaErrors(cudaStreamSynchronize(stream));
+    // wait for render initialization to finish
+    checkCudaErrors(cudaStreamSynchronize(stream_image_buffer));
+    checkCudaErrors(cudaStreamSynchronize(stream_camera));
+    checkCudaErrors(cudaStreamSynchronize(stream_world));
 
     /*
     for (int row = image_height - 1; row >= 0; --row) {
@@ -165,14 +163,14 @@ int main() {
     }
     */
 
-    checkCudaErrors(cudaMemcpyAsync(image_buffer, d_image_buffer, mem_size_image_buffer, cudaMemcpyDeviceToHost, stream));
-    checkCudaErrors(cudaStreamSynchronize(stream));
+    checkCudaErrors(cudaMemcpyAsync(image_buffer, d_image_buffer, mem_size_image_buffer, cudaMemcpyDeviceToHost, stream_image_buffer));
+    checkCudaErrors(cudaStreamSynchronize(stream_image_buffer));
 
     std::cerr << "Writing result from device to host\n";
 
     for (int row = image_height - 1; row >= 0; --row) {
         for (int col = 0; col < image_width; ++col) {
-            write_color(std::cout, image_buffer[row * image_width + col], samples_per_pixel);
+            //write_color(std::cout, image_buffer[row * image_width + col], samples_per_pixel);
         }
     }
 
@@ -180,4 +178,5 @@ int main() {
 
     checkCudaErrors(cudaFreeHost(image_buffer));
     checkCudaErrors(cudaFree(d_image_buffer));
+    checkCudaErrors(cudaFree(d_world));
 }
