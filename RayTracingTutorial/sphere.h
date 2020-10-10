@@ -9,6 +9,8 @@ public:
 	
     __device__ virtual bool hit(const ray& r, double tmin, double tmax, hit_record& rec) const override;
 
+    __device__ material* get_mat_ptr() { return mat_ptr; }
+
 private:
 	point3 center;
 	double radius;
@@ -26,7 +28,7 @@ __device__ bool sphere::hit(const ray& r, double tmin, double tmax, hit_record& 
         return false;
     }
 
-    double temp = std::sqrt(discriminant);
+    double temp = sqrt(discriminant);
     double root = (-half_b - temp) / a;
     if (root > tmin && root < tmax) {
         rec.t = root;

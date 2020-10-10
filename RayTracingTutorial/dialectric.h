@@ -10,20 +10,20 @@ class dielectric : public material {
 public:
     __device__ dielectric(double ri) : ref_idx(ri) {}
 
-    __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override {
+    __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, curandState* rand_state) const override {
         attenuation = color(1.0, 1.0, 1.0);
         double etai_over_etat = rec.front_face ? (1.0 / ref_idx) : ref_idx;
         vec3 unit_direction = unit_vector(r_in.direction());
 
-        double cos_theta = fmax(0.0, fmin(1.0,  dot(-unit_direction, rec.normal)));
-        double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
+        double cos_theta = clamp(dot(-unit_direction, rec.normal), 0.0, 1.0);
+        double sin_theta = sqrt(1.0 - cos_theta * cos_theta);
 
         if (etai_over_etat * sin_theta > 1.0) {
             vec3 reflected = reflect(unit_direction, rec.normal);
             scattered = ray(rec.p, reflected);
         } else {
             double reflect_prob = schlick(cos_theta, etai_over_etat);
-            if (random_double() < reflect_prob) {
+            if (random_double(rand_state) < reflect_prob) {
                 vec3 reflected = reflect(unit_direction, rec.normal);
                 scattered = ray(rec.p, reflected);
                 return true;

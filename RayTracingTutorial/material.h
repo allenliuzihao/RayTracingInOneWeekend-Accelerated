@@ -5,7 +5,7 @@
 
 class material {
 public:
-    __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color & attenuation, ray& scattered) const = 0;
+    __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color & attenuation, ray& scattered, curandState* rand_state) const = 0;
 };
 
 __device__ double schlick(double cosine, double ref_index) {
