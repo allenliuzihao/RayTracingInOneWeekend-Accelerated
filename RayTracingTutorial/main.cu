@@ -216,7 +216,7 @@ int main() {
     checkCudaErrors(cudaEventRecord(start, stream_image_buffer));
 
     // prepare rendering with a curand state per pixel
-    dim3 threads_per_block(8, 8);
+    dim3 threads_per_block(16, 16);
     dim3 blocks_per_grid((image_width + threads_per_block.x - 1) / threads_per_block.x, (image_height + threads_per_block.y - 1) / threads_per_block.y);
 
     curandState* d_rand_state_render;
