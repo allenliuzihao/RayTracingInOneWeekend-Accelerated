@@ -149,9 +149,9 @@ void init_host_image_buffer(color* image_buffer, int image_width, int image_heig
 int main() {
     // initialize render config
     auto aspect_ratio = 3.0 / 2.0;
-    auto image_width = 1200;
+    auto image_width = 200;         // 1200
     auto image_height = static_cast<int>(image_width / aspect_ratio);
-    auto samples_per_pixel = 500;
+    auto samples_per_pixel = 10;    // 500
     auto max_depth = 50;
 
     // initialize camera
@@ -244,6 +244,7 @@ int main() {
     checkCudaErrors(cudaFree(d_image_buffer));
 
     checkCudaErrors(cudaFree(d_rand_state_create_world));
+    checkCudaErrors(cudaFree(d_rand_state_render));
     checkCudaErrors(cudaFree(d_objects));
     checkCudaErrors(cudaFree(d_world));
 }
