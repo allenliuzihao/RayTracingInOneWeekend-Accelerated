@@ -84,7 +84,7 @@ __global__ void random_scene(hittable** d_objects, hittable** d_world, curandSta
                     d_objects[i++] = new sphere(center, 0.2, new lambertian(albedo));
                 } else if (choose_mat < 0.95) {
                     // metal
-                    auto albedo = (color::random(&local_rand_state) + 1.0f) * 0.5f;
+                    auto albedo = (color::random(&local_rand_state) + 1.0) * 0.5;
                     auto fuzz = random_double(&local_rand_state) * 0.5;
                     d_objects[i++] = new sphere(center, 0.2, new metal(albedo, fuzz));
                 } else {
@@ -185,7 +185,7 @@ int main() {
 
     hittable** d_objects;
     hittable** d_world;
-    int num_hittables = 22 * 22 + 3 + 1;
+    int num_hittables = 485;
     checkCudaErrors(cudaMalloc(&d_objects, num_hittables * sizeof(hittable*)));
     checkCudaErrors(cudaMalloc(&d_world, sizeof(hittable*)));
 
