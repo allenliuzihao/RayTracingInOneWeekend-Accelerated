@@ -149,9 +149,9 @@ void init_host_image_buffer(color* image_buffer, int image_width, int image_heig
 int main() {
     // initialize render config
     auto aspect_ratio = 3.0 / 2.0;
-    auto image_width = 200;         // 1200
+    auto image_width = 1200;    
     auto image_height = static_cast<int>(image_width / aspect_ratio);
-    auto samples_per_pixel = 10;    // 500
+    auto samples_per_pixel = 500;
     auto max_depth = 50;
 
     // initialize camera
@@ -206,6 +206,13 @@ int main() {
     checkCudaErrors(cudaStreamSynchronize(stream_camera));
     checkCudaErrors(cudaStreamSynchronize(stream_world));
 
+    // event record
+    cudaEvent_t start, stop;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+
+    checkCudaErrors(cudaEventRecord(start, stream_image_buffer));
+
     // prepare rendering with a curand state per pixel
     dim3 threads_per_block(8, 8);
     dim3 blocks_per_grid((image_width + threads_per_block.x - 1) / threads_per_block.x, (image_height + threads_per_block.y - 1) / threads_per_block.y);
@@ -220,7 +227,14 @@ int main() {
     checkCudaErrors(cudaGetLastError());
 
     checkCudaErrors(cudaMemcpyAsync(image_buffer, d_image_buffer, mem_size_image_buffer, cudaMemcpyDeviceToHost, stream_image_buffer));
-    checkCudaErrors(cudaStreamSynchronize(stream_image_buffer));
+
+    checkCudaErrors(cudaEventRecord(stop, stream_image_buffer));
+    checkCudaErrors(cudaEventSynchronize(stop));
+
+    float msecTotal = 0.0f;
+    checkCudaErrors(cudaEventElapsedTime(&msecTotal, start, stop));
+
+    std::cerr << "\nrendering complete.\n GPU time used: " << msecTotal << " ms\n";
 
     std::cerr << "Writing result from device to host\n";
 
@@ -245,6 +259,8 @@ int main() {
 
     checkCudaErrors(cudaFree(d_rand_state_create_world));
     checkCudaErrors(cudaFree(d_rand_state_render));
+    checkCudaErrors(cudaEventDestroy(start));
+    checkCudaErrors(cudaEventDestroy(stop));
     checkCudaErrors(cudaFree(d_objects));
     checkCudaErrors(cudaFree(d_world));
 }
