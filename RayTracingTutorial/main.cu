@@ -162,6 +162,8 @@ int main() {
     double aperture = 0.1;
     camera host_cam(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
 
+    checkCudaErrors(cudaSetDevice(1));
+
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
     unsigned int size_image_buffer = image_width * image_height;
