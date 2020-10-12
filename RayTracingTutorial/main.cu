@@ -320,6 +320,7 @@ int main() {
 
         free_world <<<1, 1, 0, gpus[i].stream_world>>> (gpus[i].d_objects, num_hittables, gpus[i].d_world);
         checkCudaErrors(cudaGetLastError());
+        checkCudaErrors(cudaStreamSynchronize(gpus[i].stream_world));
 
         checkCudaErrors(cudaStreamDestroy(gpus[i].stream_world));
         checkCudaErrors(cudaStreamDestroy(gpus[i].stream_camera));
