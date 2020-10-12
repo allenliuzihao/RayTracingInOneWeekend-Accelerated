@@ -256,8 +256,8 @@ int main() {
     }
 
     for (int i = 0; i < NUM_GPUS; i++) {
-        cudaSetDevice(i);
-        cudaDeviceSynchronize();
+        checkCudaErrors(cudaSetDevice(i));
+        checkCudaErrors(cudaDeviceSynchronize());
     }
 
     StopWatchInterface* timer = NULL;
@@ -290,8 +290,8 @@ int main() {
     }
     
     for (int i = 0; i < NUM_GPUS; i++) {
-        cudaSetDevice(i);
-        cudaDeviceSynchronize();
+        checkCudaErrors(cudaSetDevice(i));
+        checkCudaErrors(cudaDeviceSynchronize());
     }
 
     sdkStopTimer(&timer);
