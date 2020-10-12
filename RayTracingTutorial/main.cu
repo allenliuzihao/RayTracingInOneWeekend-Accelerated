@@ -220,7 +220,6 @@ int main() {
 
     // world
     int num_hittables = 485;
-    curandState* d_rand_state_create_world;
 
     // GPUs
     int NUM_GPUS = MAX_GPU_COUNT;
