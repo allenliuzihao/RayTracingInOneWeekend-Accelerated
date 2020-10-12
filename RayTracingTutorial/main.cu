@@ -19,7 +19,7 @@
 
 const int MAX_GPU_COUNT = 2;
 
-__constant__ camera cam[MAX_GPU_COUNT];
+__constant__ camera cam;
 
 typedef struct {
     color* d_image_buffer;
@@ -139,7 +139,7 @@ __global__ void render_init(int image_width_index, int image_width, int image_he
     curand_init(1993, pixel_index, 0, &rand_state[pixel_index]);
 }
 
-__global__ void render(int gpu, color* image_buffer, int image_width_index, int image_width, int image_height, int samples_per_pixel, int max_depth, hittable** world, curandState* rand_state) {
+__global__ void render(color* image_buffer, int image_width_index, int image_width, int image_height, int samples_per_pixel, int max_depth, hittable** world, curandState* rand_state) {
     int i = image_width_index + threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -154,7 +154,7 @@ __global__ void render(int gpu, color* image_buffer, int image_width_index, int 
     for (int sample = 0; sample < samples_per_pixel; ++sample) {
         double u = (i * 1.0 + random_double(&local_rand_state)) / image_width;
         double v = (j * 1.0 + random_double(&local_rand_state)) / image_height;
-        ray r = cam[gpu].get_ray(u, v, &local_rand_state);
+        ray r = cam.get_ray(u, v, &local_rand_state);
         pixel_color += ray_color(r, world, max_depth, &local_rand_state);
     }
 
@@ -240,7 +240,7 @@ int main() {
         checkCudaErrors(cudaStreamCreate(&gpus[i].stream_camera));
         checkCudaErrors(cudaStreamCreate(&gpus[i].stream_world));
 
-        checkCudaErrors(cudaMemcpyToSymbolAsync(cam[i], &host_cam, sizeof(camera), 0, cudaMemcpyDefault, gpus[i].stream_camera));
+        checkCudaErrors(cudaMemcpyToSymbolAsync(cam, &host_cam, sizeof(camera), 0, cudaMemcpyDefault, gpus[i].stream_camera));
         
         checkCudaErrors(cudaMalloc(&gpus[i].d_rand_state_create_world, sizeof(curandState)));
         rand_init <<<1, 1, 0, gpus[i].stream_world>>> (gpus[i].d_rand_state_create_world);
@@ -281,7 +281,7 @@ int main() {
         render_init <<<blocks_per_grid, threads_per_block, 0, gpus[i].stream_image_buffer>>> (curr_image_width_index, image_width, image_height, gpus[i].d_rand_state_render);
         checkCudaErrors(cudaGetLastError());
 
-        render <<<blocks_per_grid, threads_per_block, 0, gpus[i].stream_image_buffer>>> (i, gpus[i].d_image_buffer, curr_image_width_index, image_width, image_height, samples_per_pixel, max_depth, gpus[i].d_world, gpus[i].d_rand_state_render);
+        render <<<blocks_per_grid, threads_per_block, 0, gpus[i].stream_image_buffer>>> (gpus[i].d_image_buffer, curr_image_width_index, image_width, image_height, samples_per_pixel, max_depth, gpus[i].d_world, gpus[i].d_rand_state_render);
         checkCudaErrors(cudaGetLastError());
 
         checkCudaErrors(cudaMemcpyAsync(gpus[i].h_image_buffer, gpus[i].d_image_buffer, gpus[i].mem_size_image_buffer, cudaMemcpyDeviceToHost, gpus[i].stream_image_buffer));
