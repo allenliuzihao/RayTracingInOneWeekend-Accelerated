@@ -255,6 +255,12 @@ int main() {
         checkCudaErrors(cudaMemcpyAsync(gpus[i].h_image_buffer, gpus[i].d_image_buffer, gpus[i].mem_size_image_buffer, cudaMemcpyDeviceToHost, gpus[i].stream_image_buffer));
     }
 
+
+    for (int i = 0; i < NUM_GPUS; ++i) {
+        checkCudaErrors(cudaSetDevice(i));
+        checkCudaErrors(cudaDeviceSynchronize());
+    }
+
     sdkStopTimer(&timer);
     std::cerr << "\nrendering complete.\n GPU time used: " << sdkGetTimerValue(&timer) << " ms\n";
 
@@ -278,7 +284,7 @@ int main() {
     for (int i = 0; i < NUM_GPUS; ++i) {
         checkCudaErrors(cudaSetDevice(i));
 
-        free_world <<<1, 1, 0, gpus[i].stream_world >>> (gpus[i].d_objects, num_hittables, gpus[i].d_world);
+        free_world <<<1, 1, 0, gpus[i].stream_world>>> (gpus[i].d_objects, num_hittables, gpus[i].d_world);
         checkCudaErrors(cudaGetLastError());
         checkCudaErrors(cudaStreamSynchronize(gpus[i].stream_world));
 
