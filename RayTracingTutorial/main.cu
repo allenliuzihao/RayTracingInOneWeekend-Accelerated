@@ -228,7 +228,7 @@ int main() {
     checkCudaErrors(cudaGetDeviceCount(&NUM_GPUS));
     NUM_GPUS = std::min(NUM_GPUS, MAX_GPU_COUNT);
     
-    std::cerr << "CUDA-capable device count: " << NUM_GPUS << "%i\n";
+    std::cerr << "CUDA-capable device count: " << NUM_GPUS << "\n";
 
     // images
     init_host_image_buffers(gpus, NUM_GPUS, image_width, image_height);
