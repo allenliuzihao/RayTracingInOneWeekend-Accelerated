@@ -127,28 +127,35 @@ __global__ void random_scene(hittable** d_objects, hittable** d_world, curandSta
     *d_world = (hittable*) new hittables(d_objects, i);
 }
 
-__global__ void render_init(int image_width_index, int image_width, int image_height, curandState* rand_state) {
-    int i = image_width_index + threadIdx.x + blockIdx.x * blockDim.x;
+__global__ void render_init(int image_width_index, int block_image_width, int block_image_height, int image_width, int image_height, curandState* rand_state) {
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
-    if (i >= image_width || j >= image_height) {
+    if (i >= block_image_width || j >= block_image_height) {
         return;
     }
 
-    int pixel_index = j * image_width + i;
-    curand_init(1993, pixel_index, 0, &rand_state[pixel_index]);
+    int block_pixel_index = j * block_image_width + i;
+    int pixel_index = j * image_width + (i + image_width_index);
+
+    //printf("image_width_index: %i, i: %i, j: %i, pixel index: %i\n", image_width_index, i - image_width_index, j, pixel_index);
+
+    curand_init(1993, pixel_index, 0, &rand_state[block_pixel_index]);
 }
 
-__global__ void render(color* image_buffer, int image_width_index, int image_width, int image_height, int samples_per_pixel, int max_depth, hittable** world, curandState* rand_state) {
-    int i = image_width_index + threadIdx.x + blockIdx.x * blockDim.x;
+__global__ void render(color* image_buffer, int image_width_index, int block_image_width, int block_image_height, int image_width, int image_height, int samples_per_pixel, int max_depth, hittable** world, curandState* rand_state) {
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
-    if (i >= image_width || j >= image_height) {
+    if (i >= block_image_width || j >= block_image_height) {
         return;
     }
 
-    int pixel_index = j * image_width + i;
-    curandState local_rand_state = rand_state[pixel_index];
+    int block_pixel_index = j * block_image_width + i;
+
+    i += image_width_index;
+
+    curandState local_rand_state = rand_state[block_pixel_index];
 
     color pixel_color(0, 0, 0);
     for (int sample = 0; sample < samples_per_pixel; ++sample) {
@@ -158,8 +165,8 @@ __global__ void render(color* image_buffer, int image_width_index, int image_wid
         pixel_color += ray_color(r, world, max_depth, &local_rand_state);
     }
 
-    image_buffer[pixel_index] = pixel_color;
-    rand_state[pixel_index] = local_rand_state;
+    image_buffer[block_pixel_index] = pixel_color;
+    rand_state[block_pixel_index] = local_rand_state;
 }
 
 void init_host_image_buffer(color* image_buffer, int image_width, int image_height) {
@@ -205,9 +212,9 @@ void init_host_image_buffers(GPUPlan gpus[], int NUM_GPUs, int image_width, int 
 int main() {
     // initialize render config
     auto aspect_ratio = 3.0 / 2.0;
-    auto image_width = 1200;    
+    auto image_width = 200;    
     auto image_height = static_cast<int>(image_width / aspect_ratio);
-    auto samples_per_pixel = 500;
+    auto samples_per_pixel = 10;
     auto max_depth = 50;
 
     // initialize camera
@@ -266,7 +273,7 @@ int main() {
 
     int curr_image_width, curr_image_height = image_height;
     int curr_image_width_index = 0;
-    dim3 threads_per_block(16, 16);
+    dim3 threads_per_block(16, 16, 1);
     dim3 blocks_per_grid;
 
     for (int i = 0; i < NUM_GPUS; ++i) {
@@ -275,13 +282,12 @@ int main() {
         curr_image_width = gpus[i].width_to - gpus[i].width_from;
         blocks_per_grid.x = (curr_image_width + threads_per_block.x - 1) / threads_per_block.x;
         blocks_per_grid.y = (curr_image_height + threads_per_block.y - 1) / threads_per_block.y;
+        blocks_per_grid.z = 1;
 
         checkCudaErrors(cudaMalloc(&gpus[i].d_rand_state_render, curr_image_width * curr_image_height * sizeof(curandState)));
-
-        render_init <<<blocks_per_grid, threads_per_block, 0, gpus[i].stream_image_buffer>>> (curr_image_width_index, image_width, image_height, gpus[i].d_rand_state_render);
+        render_init <<<blocks_per_grid, threads_per_block, 0, gpus[i].stream_image_buffer>>> (curr_image_width_index, curr_image_width, curr_image_height, image_width, image_height, gpus[i].d_rand_state_render);
         checkCudaErrors(cudaGetLastError());
-
-        render <<<blocks_per_grid, threads_per_block, 0, gpus[i].stream_image_buffer>>> (gpus[i].d_image_buffer, curr_image_width_index, image_width, image_height, samples_per_pixel, max_depth, gpus[i].d_world, gpus[i].d_rand_state_render);
+        render <<<blocks_per_grid, threads_per_block, 0, gpus[i].stream_image_buffer>>> (gpus[i].d_image_buffer, curr_image_width_index, curr_image_width, curr_image_height, image_width, image_height, samples_per_pixel, max_depth, gpus[i].d_world, gpus[i].d_rand_state_render);
         checkCudaErrors(cudaGetLastError());
 
         checkCudaErrors(cudaMemcpyAsync(gpus[i].h_image_buffer, gpus[i].d_image_buffer, gpus[i].mem_size_image_buffer, cudaMemcpyDeviceToHost, gpus[i].stream_image_buffer));
@@ -310,6 +316,7 @@ int main() {
             }
         }
     }
+    
 
     std::cerr << "\nDone.\n";
 
