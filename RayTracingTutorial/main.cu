@@ -199,7 +199,7 @@ void init_host_image_buffers(GPUPlan gpus[], int NUM_GPUs, int image_width, int 
         checkCudaErrors(cudaMallocHost(&gpus[i].h_image_buffer, gpus[i].mem_size_image_buffer));
         
         for (int row = 0; row < image_height; ++row) {
-            for (int col = 0; col < curr_width; ++col) {
+            for (int col = 0; col < (int) curr_width; ++col) {
                 gpus[i].h_image_buffer[row * curr_width + col] = color(0, 0, 0);
             }
         }
@@ -212,9 +212,9 @@ void init_host_image_buffers(GPUPlan gpus[], int NUM_GPUs, int image_width, int 
 int main() {
     // initialize render config
     auto aspect_ratio = 3.0 / 2.0;
-    auto image_width = 200;    
+    auto image_width = 400;    
     auto image_height = static_cast<int>(image_width / aspect_ratio);
-    auto samples_per_pixel = 10;
+    auto samples_per_pixel = 100;
     auto max_depth = 50;
 
     // initialize camera
