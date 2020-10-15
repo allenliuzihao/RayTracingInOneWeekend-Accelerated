@@ -5,6 +5,7 @@
 #include "color.h"
 #include "hittables.h"
 #include "sphere.h"
+#include "moving_sphere.h"
 #include "camera.h"
 
 #include "material.h"
@@ -51,7 +52,8 @@ hittables random_scene() {
                     // diffuse
                     auto albedo = color::random() * color::random();
                     sphere_material = std::make_shared<lambertian>(albedo);
-                    world.add(std::make_shared<sphere>(center, 0.2, sphere_material));
+                    auto center2 = center + vec3(0, random_double(0, 0.5), 0);
+                    world.add(std::make_shared<moving_sphere>(center, center2, 0.0, 1.0, 0.2, sphere_material));
                 }
                 else if (choose_mat < 0.95) {
                     // metal
@@ -83,10 +85,10 @@ hittables random_scene() {
 
 int main()
 {
-    auto aspect_ratio = 3.0 / 2.0;
-    auto image_width = 1200;
+    auto aspect_ratio = 16.0 / 9.0;
+    auto image_width = 200;
     auto image_height = static_cast<int>(image_width / aspect_ratio);
-    auto samples_per_pixel = 500;
+    auto samples_per_pixel = 50;
     auto max_depth = 50;
 
     auto world = random_scene();
@@ -109,7 +111,7 @@ int main()
     auto dist_to_focus = 10.0;
     double aperture = 0.1;
 
-    camera cam(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
+    camera cam(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
 
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
