@@ -11,21 +11,7 @@ public:
 	point3 min() const { return _min; }
 	point3 max() const { return _max; }
 
-	bool hit(const ray& r, double tmin, double tmax) const {
-		for (int a = 0; a < 3; ++a) {
-			auto t0 = std::fmin((_min[a] - r.origin()[a]) / r.direction()[a], (_max[a] - r.origin()[a]) / r.direction()[a]);
-			auto t1 = std::fmax((_min[a] - r.origin()[a]) / r.direction()[a], (_max[a] - r.origin()[a]) / r.direction()[a]);
-
-			tmin = std::fmax(t0, tmin);
-			tmax = std::fmin(t1, tmax);
-
-			if (tmin >= tmax) {
-				return false;
-			}
-		}
-
-		return true;
-	}
+	bool hit(const ray& r, double tmin, double tmax) const;
 
 private:
 	point3 _min;
@@ -51,4 +37,16 @@ inline bool aabb::hit(const ray& r, double tmin, double tmax) const {
 		}
 	}
 	return true;
+}
+
+aabb surrounding_box (const aabb & box0, const aabb & box1) {
+	point3 small(fmin(box0.min().x(), box1.min().x()),
+				 fmin(box0.min().y(), box1.min().y()),
+				 fmin(box0.min().z(), box1.min().z()));
+
+	point3 big(fmax(box0.max().x(), box1.max().x()),
+			   fmax(box0.max().y(), box1.max().y()),
+			   fmax(box0.max().z(), box1.max().z()));
+
+	return aabb(small, big);
 }
