@@ -16,6 +16,13 @@ private:
     std::shared_ptr<material> mat_ptr;
 };
 
+void get_sphere_uv(const vec3& p, double& u, double& v) {
+    auto phi = atan2(p.y(), p.x());
+    auto theta = asin(p.z());
+    u = 1 - (phi + pi) / (2 * pi);
+    v = (theta + pi / 2) / pi;
+}
+
 bool sphere::hit(const ray& r, double tmin, double tmax, hit_record& rec) const {
     vec3 oc = r.origin() - center;
     double a = r.direction().length_squared();
@@ -34,6 +41,7 @@ bool sphere::hit(const ray& r, double tmin, double tmax, hit_record& rec) const 
         rec.p = r.at(root);
         vec3 outward_normal = (rec.p - center) / radius;
         rec.set_front_normal(r, outward_normal);
+        get_sphere_uv((rec.p - center) / radius , rec.u, rec.v);
         rec.mat_ptr = mat_ptr;
         return true;
     }
@@ -44,6 +52,7 @@ bool sphere::hit(const ray& r, double tmin, double tmax, hit_record& rec) const 
         rec.p = r.at(root);
         vec3 outward_normal = (rec.p - center) / radius;
         rec.set_front_normal(r, outward_normal);
+        get_sphere_uv((rec.p - center) / radius, rec.u, rec.v);
         rec.mat_ptr = mat_ptr;
         return true;
     }
