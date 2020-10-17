@@ -9,8 +9,8 @@ class material;
 struct hit_record {
 	point3 p;
 	vec3 normal;
-	double t;
-	bool front_face;
+	double t = 0.0;
+	bool front_face = true;
 	std::shared_ptr<material> mat_ptr;
 
 	inline void set_front_normal(const ray & r, const vec3& outward_normal) {

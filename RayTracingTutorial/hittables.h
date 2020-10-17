@@ -13,6 +13,8 @@ public:
 	void clear() { objects.clear(); }
 	void add(std::shared_ptr<hittable> object) { objects.push_back(object); };
 
+	const std::vector<std::shared_ptr<hittable>>& getObjects() const { return objects; }
+
 	virtual bool hit(const ray& r, double tmin, double tmax, hit_record& rec) const override;
 	virtual bool bounding_box(double t0, double t1, aabb& output_box) const override;
 private:

@@ -22,6 +22,10 @@ inline double random_double(double min, double max) {
 	return (max - min) * (random_double()) + min;
 }
 
+inline int random_int(int min, int max) {
+	return static_cast<int>(random_double(min, max + 1.0));
+}
+
 inline double clamp(double x, double min, double max) {
 	if (x < min) {
 		return min;
