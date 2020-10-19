@@ -45,6 +45,16 @@ hittables two_spheres() {
     return objects;
 }
 
+hittables two_perlin_spheres() {
+    hittables objects;
+
+    auto pertext = std::make_shared<noise_texture>();
+    objects.add(std::make_shared<sphere>(point3(0, -1000, 0), 1000, std::make_shared<lambertian>(pertext)));
+    objects.add(std::make_shared<sphere>(point3(0, 2, 0), 2, std::make_shared<lambertian>(pertext)));
+
+    return objects;
+}
+
 hittables random_scene() {
     hittables world;
 
@@ -118,9 +128,15 @@ int main()
         aperture = 0.1;
         break;
 
-    default:
     case 2:
         world = two_spheres();
+        lookfrom = point3(13, 2, 3);
+        lookat = point3(0, 0, 0);
+        vfov = 20.0;
+        break;
+    default:
+    case 3:
+        world = two_perlin_spheres();
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
         vfov = 20.0;
